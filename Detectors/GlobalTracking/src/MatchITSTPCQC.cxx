@@ -189,11 +189,10 @@ void MatchITSTPCQC::run(o2::framework::ProcessingContext& ctx)
       if (std::any_of(mSelectedTPCtracks.begin(), mSelectedTPCtracks.end(), [idxTrkTpc](int el) { return el == idxTrkTpc; })) {
         auto lbl = mRecoCont.getTrackMCLabel({(unsigned int)(itrk), GID::Source::ITSTPC});
         if (mMapLabels.find(lbl) == mMapLabels.end()) {
-          auto const* mcParticle = mcReader.getTrack(lbl);
           int source = lbl.getSourceID();
           int event = lbl.getEventID();
-          const std::vector<o2::MCTrack>& pcontainer = mcReader.getTracks(source, event);
-          const o2::MCTrack& p = pcontainer[itrk];
+          const std::vector<o2::MCTrack>& pcontainer = mcReader.getTracks(source, event); //particle container
+          const o2::MCTrack& p = pcontainer[itrk]; //mc particle
           if (MCTrackNavigator::isPhysicalPrimary(p, pcontainer)) {
             mMapLabels.insert({lbl, {itrk, true}});
           } else {
@@ -264,11 +263,10 @@ void MatchITSTPCQC::run(o2::framework::ProcessingContext& ctx)
           continue;
         }
         if (mMapTPCLabels.find(lbl) == mMapTPCLabels.end()) {
-          o2::MCTrack const* mcParticle = mcReader.getTrack(lbl);
           int source = lbl.getSourceID();
           int event = lbl.getEventID();
-          const std::vector<o2::MCTrack>& pcontainer = mcReader.getTracks(source, event);
-          const o2::MCTrack& p = pcontainer[itrk];
+          const std::vector<o2::MCTrack>& pcontainer = mcReader.getTracks(source, event); //particle container
+          const o2::MCTrack& p = pcontainer[itrk]; //mc particle
           if (MCTrackNavigator::isPhysicalPrimary(p, pcontainer)) {
             mMapTPCLabels.insert({lbl, {itrk, true}});
           } else {
