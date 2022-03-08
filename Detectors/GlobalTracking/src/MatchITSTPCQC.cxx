@@ -192,7 +192,7 @@ void MatchITSTPCQC::run(o2::framework::ProcessingContext& ctx)
           int source = lbl.getSourceID();
           int event = lbl.getEventID();
           const std::vector<o2::MCTrack>& pcontainer = mcReader.getTracks(source, event); //particle container
-          const o2::MCTrack& p = pcontainer[itrk]; //mc particle
+          const o2::MCTrack& p = pcontainer[itrk];                                        //mc particle
           if (MCTrackNavigator::isPhysicalPrimary(p, pcontainer)) {
             mMapLabels.insert({lbl, {itrk, true}});
           } else {
@@ -266,7 +266,7 @@ void MatchITSTPCQC::run(o2::framework::ProcessingContext& ctx)
           int source = lbl.getSourceID();
           int event = lbl.getEventID();
           const std::vector<o2::MCTrack>& pcontainer = mcReader.getTracks(source, event); //particle container
-          const o2::MCTrack& p = pcontainer[itrk]; //mc particle
+          const o2::MCTrack& p = pcontainer[itrk];                                        //mc particle
           if (MCTrackNavigator::isPhysicalPrimary(p, pcontainer)) {
             mMapTPCLabels.insert({lbl, {itrk, true}});
           } else {
