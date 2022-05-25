@@ -175,143 +175,143 @@ void MatchITSTPCQC::run(o2::framework::ProcessingContext& ctx)
   std::vector<bool> isTPCTrackSelectedEntry(mTPCTracks.size(), false);
   TrackCuts cuts;
   for (auto itrk = 0; itrk < mTPCTracks.size(); ++itrk) {
-  for (size_t itrk = 0; itrk < mTPCTracks.size(); ++itrk) {
-    auto const& trkTpc = mTPCTracks[itrk];
-    // if (selectTrack(trkTpc)) {
-    //   isTPCTrackSelectedEntry[itrk] = true;
-    // }
-    o2::dataformats::GlobalTrackID id(itrk, GID::TPC);
-    if (cuts.isSelected(id, mRecoCont)) {
-      isTPCTrackSelectedEntry[itrk] = true;
+    for (size_t itrk = 0; itrk < mTPCTracks.size(); ++itrk) {
+      auto const& trkTpc = mTPCTracks[itrk];
+      // if (selectTrack(trkTpc)) {
+      //   isTPCTrackSelectedEntry[itrk] = true;
+      // }
+      o2::dataformats::GlobalTrackID id(itrk, GID::TPC);
+      if (cuts.isSelected(id, mRecoCont)) {
+        isTPCTrackSelectedEntry[itrk] = true;
+      }
     }
-  }
 
-  // numerator + eta, chi2...
-  if (mUseMC) {
-    mMapLabels.clear();
-    for (int itrk = 0; itrk < static_cast<int>(mITSTPCTracks.size()); ++itrk) {
-      auto const& trk = mITSTPCTracks[itrk];
-      auto idxTrkTpc = trk.getRefTPC().getIndex();
-      if (isTPCTrackSelectedEntry[idxTrkTpc] == true) {
-        auto lbl = mRecoCont.getTrackMCLabel({(unsigned int)(itrk), GID::Source::ITSTPC});
-        if (mMapLabels.find(lbl) == mMapLabels.end()) {
-          int source = lbl.getSourceID();
-          int event = lbl.getEventID();
-          const std::vector<o2::MCTrack>& pcontainer = mcReader.getTracks(source, event);
-          const o2::MCTrack& p = pcontainer[lbl.getTrackID()];
-          if (MCTrackNavigator::isPhysicalPrimary(p, pcontainer)) {
-            mMapLabels.insert({lbl, {itrk, true}});
+    // numerator + eta, chi2...
+    if (mUseMC) {
+      mMapLabels.clear();
+      for (int itrk = 0; itrk < static_cast<int>(mITSTPCTracks.size()); ++itrk) {
+        auto const& trk = mITSTPCTracks[itrk];
+        auto idxTrkTpc = trk.getRefTPC().getIndex();
+        if (isTPCTrackSelectedEntry[idxTrkTpc] == true) {
+          auto lbl = mRecoCont.getTrackMCLabel({(unsigned int)(itrk), GID::Source::ITSTPC});
+          if (mMapLabels.find(lbl) == mMapLabels.end()) {
+            int source = lbl.getSourceID();
+            int event = lbl.getEventID();
+            const std::vector<o2::MCTrack>& pcontainer = mcReader.getTracks(source, event);
+            const o2::MCTrack& p = pcontainer[lbl.getTrackID()];
+            if (MCTrackNavigator::isPhysicalPrimary(p, pcontainer)) {
+              mMapLabels.insert({lbl, {itrk, true}});
+            } else {
+              mMapLabels.insert({lbl, {itrk, false}});
+            }
           } else {
-            mMapLabels.insert({lbl, {itrk, false}});
-          }
-        } else {
-          // winner (if more tracks have the same label) has the highest pt
-          if (mITSTPCTracks[mMapLabels.at(lbl).mIdx].getPt() < trk.getPt()) {
-            mMapLabels.at(lbl).mIdx = itrk;
+            // winner (if more tracks have the same label) has the highest pt
+            if (mITSTPCTracks[mMapLabels.at(lbl).mIdx].getPt() < trk.getPt()) {
+              mMapLabels.at(lbl).mIdx = itrk;
+            }
           }
         }
       }
-    }
-    LOG(info) << "number of entries in map for nominator (without duplicates) = " << mMapLabels.size();
-    // now we use only the tracks in the map to fill the histograms (--> tracks have passed the
-    // track selection and there are no duplicated tracks wrt the same MC label)
-    for (auto const& el : mMapLabels) {
-      auto const& trk = mITSTPCTracks[el.second.mIdx];
-      auto const& trkTpc = mTPCTracks[trk.getRefTPC()];
-      mPt->Fill(trkTpc.getPt());
-      mPhi->Fill(trkTpc.getPhi());
-      // we fill also the denominator
-      mPtTPC->Fill(trkTpc.getPt());
-      mPhiTPC->Fill(trkTpc.getPhi());
-      if (el.second.mIsPhysicalPrimary) {
-        mPtPhysPrim->Fill(trkTpc.getPt());
-        mPhiPhysPrim->Fill(trkTpc.getPhi());
-        // we fill also the denominator
-        mPtTPCPhysPrim->Fill(trkTpc.getPt());
-        mPhiTPCPhysPrim->Fill(trkTpc.getPhi());
-      }
-      ++mNITSTPCSelectedTracks;
-    }
-  }
-
-  for (auto const& trk : mITSTPCTracks) {
-    if (trk.getRefTPC().getIndex() >= mTPCTracks.size()) {
-      LOG(fatal) << "******************** ATTENTION! idx = " << trk.getRefTPC().getIndex() << ", size of container = " << mTPCTracks.size() << " in TF " << evCount;
-      continue;
-    }
-    auto const& trkTpc = mTPCTracks[trk.getRefTPC()];
-    auto idxTrkTpc = trk.getRefTPC().getIndex();
-    if (isTPCTrackSelectedEntry[idxTrkTpc] == true) {
-      if (!mUseMC) {
+      LOG(info) << "number of entries in map for nominator (without duplicates) = " << mMapLabels.size();
+      // now we use only the tracks in the map to fill the histograms (--> tracks have passed the
+      // track selection and there are no duplicated tracks wrt the same MC label)
+      for (auto const& el : mMapLabels) {
+        auto const& trk = mITSTPCTracks[el.second.mIdx];
+        auto const& trkTpc = mTPCTracks[trk.getRefTPC()];
         mPt->Fill(trkTpc.getPt());
         mPhi->Fill(trkTpc.getPhi());
+        // we fill also the denominator
+        mPtTPC->Fill(trkTpc.getPt());
+        mPhiTPC->Fill(trkTpc.getPhi());
+        if (el.second.mIsPhysicalPrimary) {
+          mPtPhysPrim->Fill(trkTpc.getPt());
+          mPhiPhysPrim->Fill(trkTpc.getPhi());
+          // we fill also the denominator
+          mPtTPCPhysPrim->Fill(trkTpc.getPt());
+          mPhiTPCPhysPrim->Fill(trkTpc.getPhi());
+        }
+        ++mNITSTPCSelectedTracks;
       }
-      mEta->Fill(trkTpc.getEta());
-      mChi2Matching->Fill(trk.getChi2Match());
-      mChi2Refit->Fill(trk.getChi2Refit());
-      mTimeResVsPt->Fill(trkTpc.getPt(), trk.getTimeMUS().getTimeStampError());
-      LOG(debug) << "*** chi2Matching = " << trk.getChi2Match() << ", chi2refit = " << trk.getChi2Refit() << ", timeResolution = " << trk.getTimeMUS().getTimeStampError();
-      ++mNITSTPCSelectedTracks;
     }
-  }
 
-  // now filling the denominator for the efficiency calculation
-  if (mUseMC) {
-    mMapTPCLabels.clear();
-    // filling the map where we store for each MC label, the track id of the reconstructed
-    // track with the highest number of TPC clusters
-    for (int itrk = 0; itrk < static_cast<int>(mTPCTracks.size()); ++itrk) {
-      auto const& trk = mTPCTracks[itrk];
-      if (isTPCTrackSelectedEntry[itrk] == true) {
-        auto lbl = mRecoCont.getTrackMCLabel({(unsigned int)(itrk), GID::Source::TPC});
-        if (mMapLabels.find(lbl) != mMapLabels.end()) {
-          // the track was already added to the denominator
-          continue;
+    for (auto const& trk : mITSTPCTracks) {
+      if (trk.getRefTPC().getIndex() >= mTPCTracks.size()) {
+        LOG(fatal) << "******************** ATTENTION! idx = " << trk.getRefTPC().getIndex() << ", size of container = " << mTPCTracks.size() << " in TF " << evCount;
+        continue;
+      }
+      auto const& trkTpc = mTPCTracks[trk.getRefTPC()];
+      auto idxTrkTpc = trk.getRefTPC().getIndex();
+      if (isTPCTrackSelectedEntry[idxTrkTpc] == true) {
+        if (!mUseMC) {
+          mPt->Fill(trkTpc.getPt());
+          mPhi->Fill(trkTpc.getPhi());
         }
-        if (mMapTPCLabels.find(lbl) == mMapTPCLabels.end()) {
-          int source = lbl.getSourceID();
-          int event = lbl.getEventID();
-          const std::vector<o2::MCTrack>& pcontainer = mcReader.getTracks(source, event);
-          const o2::MCTrack& p = pcontainer[lbl.getTrackID()];
-          if (MCTrackNavigator::isPhysicalPrimary(p, pcontainer)) {
-            mMapTPCLabels.insert({lbl, {itrk, true}});
+        mEta->Fill(trkTpc.getEta());
+        mChi2Matching->Fill(trk.getChi2Match());
+        mChi2Refit->Fill(trk.getChi2Refit());
+        mTimeResVsPt->Fill(trkTpc.getPt(), trk.getTimeMUS().getTimeStampError());
+        LOG(debug) << "*** chi2Matching = " << trk.getChi2Match() << ", chi2refit = " << trk.getChi2Refit() << ", timeResolution = " << trk.getTimeMUS().getTimeStampError();
+        ++mNITSTPCSelectedTracks;
+      }
+    }
+
+    // now filling the denominator for the efficiency calculation
+    if (mUseMC) {
+      mMapTPCLabels.clear();
+      // filling the map where we store for each MC label, the track id of the reconstructed
+      // track with the highest number of TPC clusters
+      for (int itrk = 0; itrk < static_cast<int>(mTPCTracks.size()); ++itrk) {
+        auto const& trk = mTPCTracks[itrk];
+        if (isTPCTrackSelectedEntry[itrk] == true) {
+          auto lbl = mRecoCont.getTrackMCLabel({(unsigned int)(itrk), GID::Source::TPC});
+          if (mMapLabels.find(lbl) != mMapLabels.end()) {
+            // the track was already added to the denominator
+            continue;
+          }
+          if (mMapTPCLabels.find(lbl) == mMapTPCLabels.end()) {
+            int source = lbl.getSourceID();
+            int event = lbl.getEventID();
+            const std::vector<o2::MCTrack>& pcontainer = mcReader.getTracks(source, event);
+            const o2::MCTrack& p = pcontainer[lbl.getTrackID()];
+            if (MCTrackNavigator::isPhysicalPrimary(p, pcontainer)) {
+              mMapTPCLabels.insert({lbl, {itrk, true}});
+            } else {
+              mMapTPCLabels.insert({lbl, {itrk, false}});
+            }
           } else {
-            mMapTPCLabels.insert({lbl, {itrk, false}});
-          }
-        } else {
-          // winner (if more tracks have the same label) has the highest number of TPC clusters
-          if (mTPCTracks[mMapTPCLabels.at(lbl).mIdx].getNClusters() < trk.getNClusters()) {
-            mMapTPCLabels.at(lbl).mIdx = itrk;
+            // winner (if more tracks have the same label) has the highest number of TPC clusters
+            if (mTPCTracks[mMapTPCLabels.at(lbl).mIdx].getNClusters() < trk.getNClusters()) {
+              mMapTPCLabels.at(lbl).mIdx = itrk;
+            }
           }
         }
       }
-    }
-    LOG(info) << "number of entries in map for denominator (without duplicates) = " << mMapTPCLabels.size() + mMapLabels.size();
-    // now we use only the tracks in the map to fill the histograms (--> tracks have passed the
-    // track selection and there are no duplicated tracks wrt the same MC label)
-    for (auto const& el : mMapTPCLabels) {
-      auto const& trk = mTPCTracks[el.second.mIdx];
-      mPtTPC->Fill(trk.getPt());
-      mPhiTPC->Fill(trk.getPhi());
-      if (el.second.mIsPhysicalPrimary) {
-        mPtTPCPhysPrim->Fill(trk.getPt());
-        mPhiTPCPhysPrim->Fill(trk.getPhi());
-      }
-      ++mNTPCSelectedTracks;
-    }
-  } else {
-    // if we are in data, we loop over all tracks (no check on the label)
-    for (size_t itrk = 0; itrk < mTPCTracks.size(); ++itrk) {
-      auto const& trk = mTPCTracks[itrk];
-      if (isTPCTrackSelectedEntry[itrk] == true) {
+      LOG(info) << "number of entries in map for denominator (without duplicates) = " << mMapTPCLabels.size() + mMapLabels.size();
+      // now we use only the tracks in the map to fill the histograms (--> tracks have passed the
+      // track selection and there are no duplicated tracks wrt the same MC label)
+      for (auto const& el : mMapTPCLabels) {
+        auto const& trk = mTPCTracks[el.second.mIdx];
         mPtTPC->Fill(trk.getPt());
         mPhiTPC->Fill(trk.getPhi());
+        if (el.second.mIsPhysicalPrimary) {
+          mPtTPCPhysPrim->Fill(trk.getPt());
+          mPhiTPCPhysPrim->Fill(trk.getPhi());
+        }
         ++mNTPCSelectedTracks;
       }
+    } else {
+      // if we are in data, we loop over all tracks (no check on the label)
+      for (size_t itrk = 0; itrk < mTPCTracks.size(); ++itrk) {
+        auto const& trk = mTPCTracks[itrk];
+        if (isTPCTrackSelectedEntry[itrk] == true) {
+          mPtTPC->Fill(trk.getPt());
+          mPhiTPC->Fill(trk.getPhi());
+          ++mNTPCSelectedTracks;
+        }
+      }
     }
+    evCount++;
   }
-  evCount++;
-}
 
 //__________________________________________________________
 
